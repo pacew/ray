@@ -1,4 +1,5 @@
 {
   "site_type": "php",
-  "example_path": "1801"
+  "example_path": "1801",
+  "node_packages": [ "three" ]
 }

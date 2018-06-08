@@ -238,12 +238,11 @@ async function install_site () {
   if (cfg.options.node_packages) {
     let need = [];
     npm_package = read_json_file ("package.json");
-    for (var idx in cfg.options.node_packages) {
-      var pkg = cfg.options.node_packages[idx];
-      if (! npm_package.dependencies[pkg]) {
+    cfg.options.node_packages.forEach (function (pkg) {
+      if (! fs.existsSync ("node_modules/" + pkg)) {
 	need.push (pkg);
       }
-    }
+    });
     if (need.length) {
       printf ("npm install --save %s\n", need.join(" "));
     }
