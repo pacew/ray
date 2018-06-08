@@ -7,7 +7,7 @@ const boom_length = 4; /* meters */
 const boom_diam = .2; /* meters */
 
 var hub_angle = 0; /* radians */
-const hub_period = 100; /* seconds */
+const hub_period = 8; /* seconds */
 
 
 const body_l = 2;
@@ -49,12 +49,23 @@ var body;
 
 var canvas, ctx;
 
+var img_data;
+
 function make_canvas () {
   canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 256;
+  canvas.width = canvas.height = 128;
   ctx = canvas.getContext('2d');
+
+  img_data = ctx.createImageData (128, 128);
+
   update_canvas ();
 }
+
+function lscale (x, from_min, from_max, to_min, to_max) {
+  return ((x - from_min) / (from_max - from_min) * (to_max - to_min) + to_min);
+}
+
+var offset = 0;
 
 function update_canvas() {
   ctx.font = '20pt Arial';
@@ -65,19 +76,46 @@ function update_canvas() {
   ctx.fillStyle = 'black';
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(new Date().getTime(), canvas.width / 2, canvas.height / 2);
+  ctx.fillText(new Date().getTime() % 10000, 
+	       canvas.width / 2, canvas.height / 2);
 
-  for (let row = 0; row < 100; row++) {
-    for (let col = 0; col < 100; col++) {
-      let x = 10 + row * 10;
-      let y = 10 + col * 10;
+  let row, col, idx;
+  let arr;
+
+  arr = img_data.data;
+  idx = 0;
+  for (row = 0; row < 128; row++) {
+    for (col = 0; col < 128; col++) {
+      arr[idx++] = row;
+      arr[idx++] = col;
+      arr[idx++] = 128;
+      arr[idx++] = 255;
+    }
+  }
+
+  let secs = new Date().getTime() / 10000;
+  let freq = 2;
+
+  row = 64;
+  for (col = 0; col < 128 - 4; col++) {
+    let s = col / 128 * 2 * 2 * Math.PI;
+    s += secs * 40;
+    let h = Math.floor (20 * Math.sin (s));
       
-      ctx.beginPath ();
-      ctx.fillStyle = "green";
-      ctx.fillRect (x, y, 5, 5);
+    for (let row_off = 0; row_off < 4; row_off++) {
+      for (let col_off = 0; col_off < 4; col_off++) {
+	idx = ((row + h + row_off) * 128 + col + col_off) * 4;
+	arr[idx++] = 255;
+	arr[idx++] = 255;
+	arr[idx++] = 0;
+	arr[idx++] = 255;
+      }
     }
   }
   
+  ctx.putImageData (img_data, 0, 0);
+
+
 
 }
 
@@ -122,8 +160,8 @@ function init() {
   camera.up.set (0, 0, 1);
 
   camera.translateX (3);
-  camera.translateY (-tower_height * 1.5);
-  camera.translateZ (1.7);
+  camera.translateY (-tower_height * 1.3);
+  camera.translateZ (1.6);
     
   camera.lookAt (0, 0, tower_height * .8);
 
