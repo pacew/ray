@@ -7,7 +7,7 @@ const boom_length = 4; /* meters */
 const boom_diam = .2; /* meters */
 
 var hub_angle = 0; /* radians */
-const hub_period = 10; /* seconds */
+const hub_period = 100; /* seconds */
 
 
 const body_l = 2;
@@ -57,15 +57,28 @@ function make_canvas () {
 }
 
 function update_canvas() {
-    ctx.font = '20pt Arial';
-    ctx.fillStyle = 'red';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'white';
-    ctx.fillRect(10, 10, canvas.width - 20, canvas.height - 20);
-    ctx.fillStyle = 'black';
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(new Date().getTime(), canvas.width / 2, canvas.height / 2);
+  ctx.font = '20pt Arial';
+  ctx.fillStyle = 'red';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'white';
+  ctx.fillRect(10, 10, canvas.width - 20, canvas.height - 20);
+  ctx.fillStyle = 'black';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(new Date().getTime(), canvas.width / 2, canvas.height / 2);
+
+  for (let row = 0; row < 100; row++) {
+    for (let col = 0; col < 100; col++) {
+      let x = 10 + row * 10;
+      let y = 10 + col * 10;
+      
+      ctx.beginPath ();
+      ctx.fillStyle = "green";
+      ctx.fillRect (x, y, 5, 5);
+    }
+  }
+  
+
 }
 
 
@@ -118,15 +131,17 @@ function init() {
 
   axes ();
 
-  var grid = new THREE.GridHelper( tower_height * 3, 30, 0xffffff, 0x444444 )
-      .rotateX (dtor (90));
-  scene.add( grid );
+  scene.add (new THREE.GridHelper( tower_height * 3, 30, 0xffffff, 0x444444 )
+	     .rotateX (dtor (90)));
 
   make_model ();
 
   renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setSize( window.innerWidth, window.innerHeight );
   document.body.appendChild( renderer.domElement );
+  document.body.appendChild( canvas );
+
+  hub_angle = dtor (160);
 }
 
 var last_t = new Date () / 1000.0;
