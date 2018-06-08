@@ -5,8 +5,6 @@ function dtor (x) {return (x / 360.0 * 2 * Math.PI); }
 const tower_height = 6; /* meters */
 const boom_length = 4; /* meters */
 const boom_diam = .2; /* meters */
-var boom_angle = 0; /* radians */
-const boom_period = 10; /* seconds */
 
 var hub_angle = 0; /* radians */
 const hub_period = 10; /* seconds */
@@ -16,7 +14,7 @@ const body_l = 2;
 const body_w = 1;
 
 function axes () {
-  const axis_len = tower_height * 1.5;
+  const axis_len = tower_height * 2;
   const axis_r = .05;
   var geo, mat, xaxis, yaxis, zaxis;
 
@@ -49,9 +47,35 @@ var hub;
 var boom;
 var body;
 
+var canvas, ctx;
+
+function make_canvas () {
+  canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 256;
+  ctx = canvas.getContext('2d');
+  update_canvas ();
+}
+
+function update_canvas() {
+    ctx.font = '20pt Arial';
+    ctx.fillStyle = 'red';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(10, 10, canvas.width - 20, canvas.height - 20);
+    ctx.fillStyle = 'black';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(new Date().getTime(), canvas.width / 2, canvas.height / 2);
+}
+
+
+var body_texture;
+
 function make_model () {
   let geo, mat;
   
+  make_canvas ();
+
   geo = new THREE.BoxGeometry( 1, 1, .2 );
   mat = new THREE.MeshBasicMaterial( {color: 0x444444 } );
   hub = new THREE.Mesh( geo, mat )
@@ -66,9 +90,10 @@ function make_model () {
   hub.add (boom);
 
   /* body */
-  var texture = new THREE.TextureLoader().load ("RayactivationTEALPINK.jpg");
+  body_texture = new THREE.Texture (canvas);
+
   geo = new THREE.BoxGeometry( body_l, body_w, .05 );
-  mat = new THREE.MeshBasicMaterial ( { map: texture } );
+  mat = new THREE.MeshBasicMaterial ( { map: body_texture } );
   body = new THREE.Mesh( geo, mat )
     .translateY (boom_length / 2 + body_w / 2);
   boom.add( body );
@@ -114,7 +139,10 @@ function animate() {
   if (delta_t > 0) {
     last_t = t;
     
-    hub_angle += delta_t / boom_period * 2 * Math.PI 
+    update_canvas ();
+    body_texture.needsUpdate = true;
+
+    hub_angle += delta_t / hub_period * 2 * Math.PI 
     hub_angle %= 2 * Math.PI;
     hub.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), hub_angle);
 
