@@ -65,8 +65,10 @@ function make_model () {
 
   hub.add (boom);
 
+  /* body */
+  var texture = new THREE.TextureLoader().load ("RayactivationTEALPINK.jpg");
   geo = new THREE.BoxGeometry( body_l, body_w, .05 );
-  mat = new THREE.MeshBasicMaterial( {color: 0x00ffff} );
+  mat = new THREE.MeshBasicMaterial ( { map: texture } );
   body = new THREE.Mesh( geo, mat )
     .translateY (boom_length / 2 + body_w / 2);
   boom.add( body );
