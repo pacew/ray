@@ -8,9 +8,12 @@ const boom_diam = .2; /* meters */
 var boom_angle = 0; /* radians */
 const boom_period = 10; /* seconds */
 
+const body_l = 2;
+const body_w = 1;
+
 function axes () {
   const axis_len = tower_height * 1.5;
-  const axis_r = axis_len * .01;
+  const axis_r = .05;
   var geo, mat, xaxis, yaxis, zaxis;
 
   geo = new THREE.CylinderGeometry(axis_r, axis_r, axis_len);
@@ -39,6 +42,7 @@ function axes () {
 }
 
 var boom;
+var body;
 
 function make_model () {
   let geo, mat;
@@ -48,8 +52,13 @@ function make_model () {
   boom = new THREE.Mesh( geo, mat )
     .translateZ (tower_height);
 
-
   scene.add (boom);
+
+  geo = new THREE.BoxGeometry( body_l, body_w, .05 );
+  mat = new THREE.MeshBasicMaterial( {color: 0x00ffff} );
+  body = new THREE.Mesh( geo, mat )
+    .translateZ (tower_height);
+  scene.add( body );
 }
 
 
@@ -99,6 +108,11 @@ function animate() {
     boom.position.setY (0);
     boom.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), boom_angle);
     boom.translateY (boom_length / 2);
+
+    body.position.setX (0);
+    body.position.setY (0);
+    body.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), boom_angle);
+    body.translateY (boom_length + body_w / 2);
   }
   
 
