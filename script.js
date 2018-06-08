@@ -8,6 +8,10 @@ const boom_diam = .2; /* meters */
 var boom_angle = 0; /* radians */
 const boom_period = 10; /* seconds */
 
+var hub_angle = 0; /* radians */
+const hub_period = 10; /* seconds */
+
+
 const body_l = 2;
 const body_w = 1;
 
@@ -41,24 +45,31 @@ function axes () {
 
 }
 
+var hub;
 var boom;
 var body;
 
 function make_model () {
   let geo, mat;
   
+  geo = new THREE.BoxGeometry( 1, 1, .2 );
+  mat = new THREE.MeshBasicMaterial( {color: 0x444444 } );
+  hub = new THREE.Mesh( geo, mat )
+    .translateZ (tower_height);
+  scene.add (hub);
+
   geo = new THREE.CylinderGeometry(boom_diam/2, boom_diam/2, boom_length);
   mat = new THREE.MeshBasicMaterial( {color: 0xffff00} );
   boom = new THREE.Mesh( geo, mat )
-    .translateZ (tower_height);
+    .translateY (boom_length / 2);
 
-  scene.add (boom);
+  hub.add (boom);
 
   geo = new THREE.BoxGeometry( body_l, body_w, .05 );
   mat = new THREE.MeshBasicMaterial( {color: 0x00ffff} );
   body = new THREE.Mesh( geo, mat )
-    .translateZ (tower_height);
-  scene.add( body );
+    .translateY (boom_length / 2 + body_w / 2);
+  boom.add( body );
 }
 
 
@@ -101,18 +112,10 @@ function animate() {
   if (delta_t > 0) {
     last_t = t;
     
-    boom_angle += delta_t / boom_period * 2 * Math.PI 
-    boom_angle %= 2 * Math.PI;
+    hub_angle += delta_t / boom_period * 2 * Math.PI 
+    hub_angle %= 2 * Math.PI;
+    hub.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), hub_angle);
 
-    boom.position.setX (0);
-    boom.position.setY (0);
-    boom.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), boom_angle);
-    boom.translateY (boom_length / 2);
-
-    body.position.setX (0);
-    body.position.setY (0);
-    body.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), boom_angle);
-    body.translateY (boom_length + body_w / 2);
   }
   
 
