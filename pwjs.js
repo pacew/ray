@@ -178,9 +178,16 @@ async function install_site () {
     cfg.site_name = path.basename (cfg.srcdir);
   }
 
-  if (! cfg.conf_key) {
-    cfg.conf_key = path.basename (os.homedir ());
-  }    
+  var re = new RegExp ("([^-]*)-(.*)");
+  var match = re.exec (cfg.site_name);
+  if (match) {
+    cfg.site_name = match[1];
+    cfg.conf_key = match[2];
+  } else {
+    if (! cfg.conf_key) {
+      cfg.conf_key = path.basename (os.homedir ());
+    }    
+  }
 
   if (! cfg.ssl_port) {
     cfg.ssl_port = get_free_port (port_base);
