@@ -1,0 +1,13 @@
+#! /usr/bin/env nodejs
+/* -*- mode:javascript -*- */
+
+const fs = require ('fs');
+
+if (! fs.existsSync ("package.json")) {
+  process.stdout.write ("need:\n" + "npm init --yes\n");
+  process.exit (1);
+}
+
+const pwjs = require ('./pwjs');
+
+pwjs.install_site ();
