@@ -1,1 +1,22 @@
 https://stackoverflow.com/questions/12450716/animating-canvas-billboard-in-three-js
+
+
+function make_ray () {
+  var geo, mat;
+  
+  /* https://threejs.org/docs/#api/core/Geometry */
+  geo = new THREE.Geometry ();
+  geo.vertices.push (
+    new THREE.Vector3 (0, 0, 0),
+    new THREE.Vector3 (1, 0, 0),
+    new THREE.Vector3 (1, 1, 0)
+  );
+  geo.faces.push (new THREE.Face3 (0, 1, 2));
+  geo.computeBoundingSphere ();
+
+  mat = new THREE.MeshBasicMaterial( {color: 0xffff00 } );
+  mat.side = THREE.DoubleSide;
+  ray  = new THREE.Mesh( geo, mat )
+    .translateZ (.1);
+  scene.add (ray);
+}

@@ -111,8 +111,42 @@ function update_canvas() {
 
 }
 
+const ray_body_len = 2;
+const ray_body_width = .6;
+const wing1_width = .4;
 
-var body_texture;
+var ray;
+var ray_body;
+var ray_wing;
+
+function make_ray () {
+  var geo, mat;
+  
+  ray = new THREE.Group ();
+
+  geo = new THREE.PlaneGeometry (ray_body_width, ray_body_len);
+  mat = new THREE.MeshBasicMaterial ({color: 0xffff00});
+  mat.side = THREE.DoubleSide;
+  ray_body = new THREE.Mesh (geo, mat);
+  ray.add (ray_body);
+
+  ray_wing = new THREE.Group ();
+  
+  geo = new THREE.PlaneGeometry (wing1_width, ray_body_len);
+  mat = new THREE.MeshBasicMaterial ({color: 0x00ffff});
+  mat.side = THREE.DoubleSide;
+
+  let r = new THREE.Mesh (geo, mat);
+  r.rotateY (dtor (-10));
+//  r.translateX (ray_body_width / 2 + wing1_width / 2);
+  ray_wing.add (r);
+
+  ray.add (ray_wing);
+  
+
+
+  scene.add (ray);
+}
 
 function make_model () {
   let geo, mat;
@@ -140,6 +174,9 @@ function make_model () {
   body = new THREE.Mesh( geo, mat )
     .translateY (boom_length / 2 + body_w / 2);
   boom.add( body );
+
+  make_ray ();
+
 }
 
 var sky_canvas;
@@ -204,18 +241,24 @@ function init() {
     h = w;
   }
 
-  camera = new THREE.PerspectiveCamera( 70, /* degrees */
+  camera = new THREE.PerspectiveCamera( 30, /* degrees */
 					w / h,
 					0.01, 
 					sky_radius * 2)
 
-  camera.translateX (3);
-  camera.translateY (-boom_length * .9);
-  camera.translateZ (1);
-    
-  camera.up.set (0, 0, 1);
-
-  camera.lookAt (2.7, -boom_length * .75, tower_height * .35);
+  if (0) {
+    camera.translateX (3);
+    camera.translateY (-boom_length * .9);
+    camera.translateZ (1);
+    camera.up.set (0, 0, 1);
+    camera.lookAt (2.7, -boom_length * .75, tower_height * .35);
+  } else {
+    camera.translateX (.5);
+    camera.translateY (-boom_length * 1);
+    camera.translateZ (.5);
+    camera.up.set (0, 0, 1);
+    camera.lookAt (0, 0, 0);
+  }
 
   scene = new THREE.Scene();
 
