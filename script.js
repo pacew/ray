@@ -1,3 +1,5 @@
+'use strict';
+
 var camera, scene, renderer;
 
 function dtor (x) {return (x / 360.0 * 2 * Math.PI); }
@@ -7,14 +9,15 @@ const boom_length = 4; /* meters */
 const boom_diam = .2; /* meters */
 
 var hub_angle = 0; /* radians */
-const hub_period = 8; /* seconds */
+const hub_period = 15; /* seconds */
 
+const sky_radius = 30; /* meters */
 
 const body_l = 2;
 const body_w = 1;
 
 function axes () {
-  const axis_len = tower_height * 2;
+  const axis_len = tower_height;
   const axis_r = .05;
   var geo, mat, xaxis, yaxis, zaxis;
 
@@ -30,7 +33,7 @@ function axes () {
     .translateY (axis_len / 2);
 
   geo = new THREE.CylinderGeometry(axis_r, axis_r, axis_len);
-  mat = new THREE.MeshBasicMaterial( {color: 0x0000ff} );
+  mat = new THREE.MeshBasicMaterial( {color: 0x000044} );
   zaxis = new THREE.Mesh( geo, mat )
     .rotateX (dtor (90))
     .translateY (axis_len / 2);
@@ -65,20 +68,9 @@ function lscale (x, from_min, from_max, to_min, to_max) {
   return ((x - from_min) / (from_max - from_min) * (to_max - to_min) + to_min);
 }
 
-var offset = 0;
+var body_texture;
 
 function update_canvas() {
-  ctx.font = '20pt Arial';
-  ctx.fillStyle = 'red';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = 'white';
-  ctx.fillRect(10, 10, canvas.width - 20, canvas.height - 20);
-  ctx.fillStyle = 'black';
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(new Date().getTime() % 10000, 
-	       canvas.width / 2, canvas.height / 2);
-
   let row, col, idx;
   let arr;
 
@@ -128,13 +120,13 @@ function make_model () {
   make_canvas ();
 
   geo = new THREE.BoxGeometry( 1, 1, .2 );
-  mat = new THREE.MeshBasicMaterial( {color: 0x444444 } );
+  mat = new THREE.MeshBasicMaterial( {color: 0x111111 } );
   hub = new THREE.Mesh( geo, mat )
     .translateZ (tower_height);
   scene.add (hub);
 
   geo = new THREE.CylinderGeometry(boom_diam/2, boom_diam/2, boom_length);
-  mat = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+  mat = new THREE.MeshBasicMaterial( {color: 0x222222} );
   boom = new THREE.Mesh( geo, mat )
     .translateY (boom_length / 2);
 
@@ -150,20 +142,80 @@ function make_model () {
   boom.add( body );
 }
 
+var sky_canvas;
+var sky_ctx;
+var sky_img;
+var sky_texture;
+var sky;
+
+function update_sky () {
+  let row, col, idx;
+  let arr;
+
+  arr = sky_img.data;
+  idx = 0;
+  for (row = 0; row < sky_canvas.height; row++) {
+    for (col = 0; col < sky_canvas.width; col++) {
+      arr[idx++] = row;
+      arr[idx++] = col;
+      arr[idx++] = 128;
+      arr[idx++] = 255;
+    }
+  }
+
+  sky_ctx.putImageData (sky_img, 0, 0);
+}
+
+function make_sky () {
+  let geo, mat;
+
+  sky_canvas = document.createElement("canvas");
+  sky_canvas.width = sky_canvas.height = 512;
+  sky_ctx = sky_canvas.getContext('2d');
+  sky_img = ctx.createImageData (sky_canvas.width, sky_canvas.height);
+
+  update_sky ();
+
+  sky_texture = new THREE.Texture (sky_canvas);
+  
+  geo = new THREE.SphereGeometry (sky_radius, 32, 32);
+
+  if (false) {
+    mat = new THREE.MeshBasicMaterial ( {map: sky_texture } );
+  } else {
+    mat = new THREE.MeshBasicMaterial ();
+    mat.map = new THREE.TextureLoader().load ('galaxy_starfield.png');
+  }
+  mat.side = THREE.BackSide;
+  sky = new THREE.Mesh (geo, mat);
+  scene.add (sky);
+
+
+}
 
 function init() {
-  camera = new THREE.PerspectiveCamera( 70, 
-					window.innerWidth / window.innerHeight,
-					0.01, 
-					tower_height * 3 )
+  let w, h;
 
-  camera.up.set (0, 0, 1);
+  if (window.innerWidth > window.innerHeight) {
+    w = window.innerWidth;
+    h = window.innerHeight;
+  } else {
+    w = window.innerWidth;
+    h = w;
+  }
+
+  camera = new THREE.PerspectiveCamera( 70, /* degrees */
+					w / h,
+					0.01, 
+					sky_radius * 2)
 
   camera.translateX (3);
-  camera.translateY (-tower_height * 1.3);
-  camera.translateZ (1.6);
+  camera.translateY (-boom_length * .9);
+  camera.translateZ (1);
     
-  camera.lookAt (0, 0, tower_height * .8);
+  camera.up.set (0, 0, 1);
+
+  camera.lookAt (2.7, -boom_length * .75, tower_height * .35);
 
   scene = new THREE.Scene();
 
@@ -173,13 +225,19 @@ function init() {
 	     .rotateX (dtor (90)));
 
   make_model ();
+  make_sky ();
 
   renderer = new THREE.WebGLRenderer( { antialias: true } );
-  renderer.setSize( window.innerWidth, window.innerHeight );
-  document.body.appendChild( renderer.domElement );
-  document.body.appendChild( canvas );
 
-  hub_angle = dtor (160);
+  renderer.setSize(w, h);
+
+  document.body.appendChild (renderer.domElement);
+  if (false) {
+    document.body.appendChild (canvas);
+    document.body.appendChild (sky_canvas);
+  }
+
+  hub_angle = dtor (180);
 }
 
 var last_t = new Date () / 1000.0;
@@ -192,8 +250,12 @@ function animate() {
   if (delta_t > 0) {
     last_t = t;
     
+    sky.rotateOnAxis (new THREE.Vector3 (1,1,1), delta_t * -.0015);
+
+
     update_canvas ();
     body_texture.needsUpdate = true;
+    sky_texture.needsUpdate = true;
 
     hub_angle += delta_t / hub_period * 2 * Math.PI 
     hub_angle %= 2 * Math.PI;
