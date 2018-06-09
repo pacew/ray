@@ -114,6 +114,116 @@ function update_canvas() {
 var segs;
 
 function make_ray () {
+  let geo, mat;
+  
+  let ray = new THREE.Group ();
+
+  const nsegs = 8;
+  const total_length = 2;
+  const body_width = .5;
+
+  const length_reduction = .9;
+  const width_reduction = .6;
+
+  let lengths = [];
+  let widths = [];
+  let len = total_length;
+  let wid = body_width / 2;
+  for (let idx = 0; idx < nsegs / 2; idx++) {
+    lengths[idx] = len;
+    widths[idx] = wid;
+
+    len *= length_reduction;
+    wid *= width_reduction;
+  }
+
+  segs = [];
+  let seg;
+  let z = 0;
+  for (let idx = 0; idx < nsegs; idx++) {
+    seg = {};
+    seg.idx = idx;
+    seg.prev = null;
+
+    if (idx < nsegs / 2) {
+      seg.dir = -1;
+      seg.size_idx = (nsegs / 2) - idx - 1;
+    } else {
+      seg.dir = 1;
+      seg.size_idx = idx - (nsegs / 2);
+    }
+    seg.length = lengths[seg.size_idx];
+    seg.width = widths[seg.size_idx];
+    
+
+    geo = new THREE.Geometry ();
+    geo.vertices.push (
+      new THREE.Vector3 (0,                    -seg.length/2, 0),
+      new THREE.Vector3 (0,                     seg.length/2, 0),
+      new THREE.Vector3 (seg.width * seg.dir,   seg.length/2, 0),
+      new THREE.Vector3 (seg.width * seg.dir , -seg.length/2, 0)
+    );
+    geo.faces.push (new THREE.Face3 (0, 1, 2));
+    geo.faces.push (new THREE.Face3 (2, 3, 0));
+
+    let u0 = 0;
+    let u1 = 1;
+    let v0 = 0;
+    let v1 = 1;
+
+    let map = [];
+    map.push ([
+      new THREE.Vector2 (u0, v0),
+      new THREE.Vector2 (u0, v1),
+      new THREE.Vector2 (u1, v1)
+    ]);
+
+    map.push ([
+      new THREE.Vector2 (u1, v1),
+      new THREE.Vector2 (u1, v0),
+      new THREE.Vector2 (u0, v0)
+    ]);
+
+    geo.faceVertexUvs = [ map ];
+
+    mat = new THREE.MeshBasicMaterial ({map: body_texture});
+    mat.side = THREE.DoubleSide;
+
+    seg.mesh = new THREE.Mesh (geo, mat);
+
+    segs[idx] = seg;
+  }
+
+  for (let idx = nsegs / 2 + 1; idx < nsegs; idx++) {
+    seg = segs[idx];
+    seg.prev = segs[idx - 1];
+  }
+  for (let idx = nsegs / 2 - 2; idx >= 0; idx--) {
+    seg = segs[idx];
+    seg.prev = segs[idx + 1];
+  }
+
+  for (let idx = 0; idx < nsegs; idx++) {
+    seg = segs[idx];
+    if (seg.prev) {
+      seg.mesh.translateX (seg.prev.width * seg.dir);
+      seg.prev.mesh.add (seg.mesh);
+    }
+  }
+  
+
+  for (let idx = 0; idx < nsegs; idx++) {
+    seg = segs[idx];
+    if (! seg.prev) {
+      ray.add (seg.mesh);
+    }
+  }
+
+  scene.add (ray);
+
+}
+
+function make_ray_old () {
   var geo, mat;
   
   segs = [];
@@ -363,12 +473,15 @@ function animate() {
     hub.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), hub_angle);
 
     if (true) {
-      for (let idx = 1; idx < segs.length; idx++) {
-	segs[idx].mesh.setRotationFromAxisAngle (
-	  new THREE.Vector3 (0, 1, 0), 
-	  lscale (Math.sin (t * 2), 
-		  -1, 1, 
-		  0, dtor (-10 * (idx + 1))));
+      for (let idx = 0; idx < segs.length; idx++) {
+	let seg = segs[idx];
+	if (seg.prev) {
+	  seg.mesh.setRotationFromAxisAngle (
+	    new THREE.Vector3 (0, 1, 0), 
+	    lscale (Math.sin (t * 2), 
+		    -1, 1, 
+		    0, seg.dir * dtor (-10 * seg.size_idx)));
+	}
       }
     }
   }
