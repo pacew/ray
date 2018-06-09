@@ -89,14 +89,14 @@ function update_canvas() {
   let freq = 2;
 
   row = 64;
-  for (col = 0; col < 128 - 4; col++) {
-    let s = col / 128 * 2 * 2 * Math.PI;
-    s += secs * 40;
-    let h = Math.floor (20 * Math.sin (s));
+  for (let row = 0; row < 128 - 4; row++) {
+    let s = row / 128 * 2 * 2 * Math.PI;
+    s += secs * -20;
+    let col = Math.floor (40 * Math.cos (s)) + 64;
       
     for (let row_off = 0; row_off < 4; row_off++) {
       for (let col_off = 0; col_off < 4; col_off++) {
-	idx = ((row + h + row_off) * 128 + col + col_off) * 4;
+	idx = ((row + row_off) * 128 + col + col_off) * 4;
 	arr[idx++] = 255;
 	arr[idx++] = 255;
 	arr[idx++] = 0;
@@ -113,17 +113,19 @@ function update_canvas() {
 
 var segs;
 
+let ray;
+
 function make_ray () {
   let geo, mat;
   
-  let ray = new THREE.Group ();
+  ray = new THREE.Group ();
 
-  const nsegs = 8;
+  const nsegs = 12;
   const total_length = 2;
-  const body_width = .5;
+  const body_width = .3;
 
-  const length_reduction = .9;
-  const width_reduction = .6;
+  const length_reduction = .7;
+  const width_reduction = .9;
 
   let lengths = [];
   let widths = [];
@@ -231,9 +233,6 @@ function make_ray () {
       ray.add (seg.mesh);
     }
   }
-
-  scene.add (ray);
-
 }
 
 function make_model () {
@@ -261,9 +260,14 @@ function make_model () {
   mat = new THREE.MeshBasicMaterial ( { map: body_texture } );
   body = new THREE.Mesh( geo, mat )
     .translateY (boom_length / 2 + body_w / 2);
-  boom.add( body );
+//  boom.add( body );
 
   make_ray ();
+
+  ray.translateY (boom_length / 2);
+  ray.translateZ (-.5);
+  ray.rotateZ (dtor (90));
+  boom.add (ray);
 
 }
 
@@ -329,12 +333,12 @@ function init() {
     h = w;
   }
 
-  camera = new THREE.PerspectiveCamera( 30, /* degrees */
+  camera = new THREE.PerspectiveCamera( 70, /* degrees */
 					w / h,
 					0.01, 
 					sky_radius * 2)
 
-  if (0) {
+  if (1) {
     camera.translateX (3);
     camera.translateY (-boom_length * .9);
     camera.translateZ (1);
@@ -398,9 +402,9 @@ function animate() {
 	if (seg.prev) {
 	  seg.mesh.setRotationFromAxisAngle (
 	    new THREE.Vector3 (0, 1, 0), 
-	    lscale (Math.sin (t * 2), 
+	    lscale (Math.sin (t * 1), 
 		    -1, 1, 
-		    0, seg.dir * dtor (-10 * seg.size_idx)));
+		    0, seg.dir * dtor (-6 * seg.size_idx)));
 	}
       }
     }
