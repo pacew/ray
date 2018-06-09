@@ -129,17 +129,22 @@ function make_ray () {
   let widths = [];
   let len = total_length;
   let wid = body_width / 2;
+  let total_width = 0;
   for (let idx = 0; idx < nsegs / 2; idx++) {
     lengths[idx] = len;
     widths[idx] = wid;
 
+    total_width += wid;
+    
     len *= length_reduction;
     wid *= width_reduction;
   }
+  total_width *= 2;
 
   segs = [];
   let seg;
   let z = 0;
+  let xoffset = 0;
   for (let idx = 0; idx < nsegs; idx++) {
     seg = {};
     seg.idx = idx;
@@ -155,6 +160,19 @@ function make_ray () {
     seg.length = lengths[seg.size_idx];
     seg.width = widths[seg.size_idx];
     
+    if (seg.dir == -1) {
+      seg.u0 = (xoffset + seg.width) / total_width;
+      seg.u1 = xoffset / total_width;
+    } else {
+      seg.u0 = xoffset / total_width;
+      seg.u1 = (xoffset + seg.width) / total_width;
+    }
+    xoffset += seg.width;
+
+    let yoffset = (total_length - seg.length) / 2;
+
+    seg.v0 = yoffset / total_length;
+    seg.v1 = (yoffset + seg.length) / total_length;
 
     geo = new THREE.Geometry ();
     geo.vertices.push (
@@ -166,22 +184,17 @@ function make_ray () {
     geo.faces.push (new THREE.Face3 (0, 1, 2));
     geo.faces.push (new THREE.Face3 (2, 3, 0));
 
-    let u0 = 0;
-    let u1 = 1;
-    let v0 = 0;
-    let v1 = 1;
-
     let map = [];
     map.push ([
-      new THREE.Vector2 (u0, v0),
-      new THREE.Vector2 (u0, v1),
-      new THREE.Vector2 (u1, v1)
+      new THREE.Vector2 (seg.u0, seg.v0),
+      new THREE.Vector2 (seg.u0, seg.v1),
+      new THREE.Vector2 (seg.u1, seg.v1)
     ]);
 
     map.push ([
-      new THREE.Vector2 (u1, v1),
-      new THREE.Vector2 (u1, v0),
-      new THREE.Vector2 (u0, v0)
+      new THREE.Vector2 (seg.u1, seg.v1),
+      new THREE.Vector2 (seg.u1, seg.v0),
+      new THREE.Vector2 (seg.u0, seg.v0)
     ]);
 
     geo.faceVertexUvs = [ map ];
