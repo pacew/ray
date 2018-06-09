@@ -111,47 +111,48 @@ function update_canvas() {
 
 }
 
-const ray_body_len = 2;
-const ray_body_width = .6;
-const wing1_width = .4;
-
-var ray;
-var ray_body;
-var ray_wing;
+var segs;
 
 function make_ray () {
   var geo, mat;
   
-  ray = new THREE.Group ();
-
-  geo = new THREE.PlaneGeometry (ray_body_width, ray_body_len);
-  mat = new THREE.MeshBasicMaterial ({color: 0xffff00});
-  mat.side = THREE.DoubleSide;
-  ray_body = new THREE.Mesh (geo, mat);
-  ray.add (ray_body);
-
-  geo = new THREE.Geometry ();
-  geo.vertices.push (
-    new THREE.Vector3 (0, -ray_body_len/2, 0),
-    new THREE.Vector3 (0,  ray_body_len/2, 0),
-    new THREE.Vector3 (wing1_width, ray_body_len/2, 0),
-    new THREE.Vector3 (wing1_width, -ray_body_len/2, 0),
-  );
-  geo.faces.push (new THREE.Face3 (0, 1, 2));
-  geo.faces.push (new THREE.Face3 (2, 3, 0));
+  segs = [];
   
-  mat = new THREE.MeshBasicMaterial ({color: 0x00ffff});
-  mat.side = THREE.DoubleSide;
+  let wid = .6;
+  let len = 2;
 
-  ray_wing = new THREE.Mesh (geo, mat);
-  ray_wing.translateX (ray_body_width / 2);
-  ray_wing.rotateY (dtor (-10));
-
-  ray.add (ray_wing);
+  let last_seg = null;
+  let last_off = 0;
   
+  for (let segnum = 0; segnum < 4; segnum++) {
+    geo = new THREE.Geometry ();
+    geo.vertices.push (
+      new THREE.Vector3 (0, -len, 0),
+      new THREE.Vector3 (0,  len, 0),
+      new THREE.Vector3 (wid, len, 0),
+      new THREE.Vector3 (wid, -len, 0)
+    );
+    geo.faces.push (new THREE.Face3 (0, 1, 2));
+    geo.faces.push (new THREE.Face3 (2, 3, 0));
+  
+    mat = new THREE.MeshBasicMaterial ({color: 0x00ff20 + segnum * 0x40 });
+    mat.side = THREE.DoubleSide;
 
+    let seg = new THREE.Mesh (geo, mat);
+    seg.translateX (last_off);
+    last_off = wid;
 
-  scene.add (ray);
+    segs.push (seg);
+
+    if (last_seg)
+      last_seg.add (seg);
+    last_seg = seg;
+
+    wid *= .6;
+    len *= .8;
+  }
+  
+  scene.add (segs[0]);
 }
 
 function make_model () {
@@ -310,10 +311,12 @@ function animate() {
     hub_angle %= 2 * Math.PI;
     hub.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), hub_angle);
 
-    ray_wing.setRotationFromAxisAngle (new THREE.Vector3 (0, 1, 0), 
-				       lscale (Math.sin (t * 2), 
-					       -1, 1, 
-					       0, dtor (-20)));
+    for (let idx = 1; idx < segs.length; idx++) {
+      segs[idx].setRotationFromAxisAngle (new THREE.Vector3 (0, 1, 0), 
+					  lscale (Math.sin (t * 2), 
+						  -1, 1, 
+						  0, dtor (-10 * (idx + 1))));
+    }
 
   }
   
