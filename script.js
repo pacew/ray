@@ -118,41 +118,92 @@ function make_ray () {
   
   segs = [];
   
-  let wid = .6;
-  let len = 2;
-
   let last_seg = null;
-  let last_off = 0;
   
-  for (let segnum = 0; segnum < 4; segnum++) {
+  const nsegs = 4;
+  let segnum;
+  let seg;
+
+  let initial_wid = .25;
+  let initial_len = 2;
+
+  let wid = initial_wid;
+  let len = initial_len;
+
+  let x = 0;
+  for (segnum = 0; segnum < nsegs; segnum++) {
+    seg = {};
+    seg.wid = wid;
+    seg.len = len;
+
+    seg.left = x;
+    seg.right = seg.left + seg.wid;
+    seg.front = -seg.len/2;
+    seg.back = seg.len/2;
+
+    x += seg.wid;
+
+    wid *= .75;
+    len *= .8;
+    
+    segs.push (seg);
+  }
+
+  let max_x = x;
+
+  last_seg = null;
+  for (segnum = 0; segnum < nsegs; segnum++) {
+    seg = segs[segnum];
+
     geo = new THREE.Geometry ();
     geo.vertices.push (
-      new THREE.Vector3 (0, -len, 0),
-      new THREE.Vector3 (0,  len, 0),
-      new THREE.Vector3 (wid, len, 0),
-      new THREE.Vector3 (wid, -len, 0)
+      new THREE.Vector3 (0,       -seg.len/2, 0),
+      new THREE.Vector3 (0,        seg.len/2, 0),
+      new THREE.Vector3 (seg.wid,  seg.len/2, 0),
+      new THREE.Vector3 (seg.wid, -seg.len/2, 0)
     );
     geo.faces.push (new THREE.Face3 (0, 1, 2));
     geo.faces.push (new THREE.Face3 (2, 3, 0));
   
-    mat = new THREE.MeshBasicMaterial ({color: 0x00ff20 + segnum * 0x40 });
+    let u0 = seg.left / max_x;
+    let u1 = seg.right / max_x;
+
+    let v0 = lscale (seg.front, 
+		     -initial_len / 2, initial_len / 2,
+		     0, 1);
+    let v1 = lscale (seg.back,
+		     -initial_len / 2, initial_len / 2,
+		     0, 1);
+
+    
+
+    let map = [];
+    map.push ([
+      new THREE.Vector2 (u0, v0),
+      new THREE.Vector2 (u0, v1),
+      new THREE.Vector2 (u1, v1)
+    ]);
+
+    map.push ([
+      new THREE.Vector2 (u1, v1),
+      new THREE.Vector2 (u1, v0),
+      new THREE.Vector2 (u0, v0)
+    ]);
+
+    geo.faceVertexUvs = [ map ];
+
+    mat = new THREE.MeshBasicMaterial ({map: body_texture});
     mat.side = THREE.DoubleSide;
 
-    let seg = new THREE.Mesh (geo, mat);
-    seg.translateX (last_off);
-    last_off = wid;
-
-    segs.push (seg);
-
-    if (last_seg)
-      last_seg.add (seg);
+    seg.mesh = new THREE.Mesh (geo, mat);
+    if (last_seg) {
+      seg.mesh.translateX (last_seg.wid);
+      last_seg.mesh.add (seg.mesh);
+    }
     last_seg = seg;
-
-    wid *= .6;
-    len *= .8;
   }
   
-  scene.add (segs[0]);
+  scene.add (segs[0].mesh);
 }
 
 function make_model () {
@@ -311,13 +362,15 @@ function animate() {
     hub_angle %= 2 * Math.PI;
     hub.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), hub_angle);
 
-    for (let idx = 1; idx < segs.length; idx++) {
-      segs[idx].setRotationFromAxisAngle (new THREE.Vector3 (0, 1, 0), 
-					  lscale (Math.sin (t * 2), 
-						  -1, 1, 
-						  0, dtor (-10 * (idx + 1))));
+    if (true) {
+      for (let idx = 1; idx < segs.length; idx++) {
+	segs[idx].mesh.setRotationFromAxisAngle (
+	  new THREE.Vector3 (0, 1, 0), 
+	  lscale (Math.sin (t * 2), 
+		  -1, 1, 
+		  0, dtor (-10 * (idx + 1))));
+      }
     }
-
   }
   
 
