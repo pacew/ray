@@ -322,10 +322,43 @@ function make_sky () {
 
 }
 
+const positions = [
+  { 
+    pos: [ 3, -boom_length * .9, 1 ],
+    up: [ 0, 0, 1],
+    look: [ 2.7, -boom_length * .75, tower_height * .35 ]
+  },
+  {
+    pos: [3, -boom_length * 2, 1 ],
+    up: [0, 0, 1],
+    look: [ 0, 0, tower_height * .7 ]
+  },
+];
+
+if (0) {
+  positions.push ({
+    pos: [.5, -boom_length, .5 ],
+    up: [0, 0, 1],
+    look: [0, 0, 0]
+  });
+}
+
+let position_idx = 0;
+
+
+function adjust_camera ()
+{
+  let pos = positions[position_idx];
+
+  camera.position.set (pos.pos[0], pos.pos[1], pos.pos[2]);
+  camera.up.set (pos.up[0], pos.up[1], pos.up[2]);
+  camera.lookAt (pos.look[0], pos.look[1], pos.look[2]);
+}
+
 function init() {
   let w, h;
 
-  if (window.innerWidth > window.innerHeight) {
+  if (true || window.innerWidth > window.innerHeight) {
     w = window.innerWidth;
     h = window.innerHeight;
   } else {
@@ -338,19 +371,8 @@ function init() {
 					0.01, 
 					sky_radius * 2)
 
-  if (1) {
-    camera.translateX (3);
-    camera.translateY (-boom_length * .9);
-    camera.translateZ (1);
-    camera.up.set (0, 0, 1);
-    camera.lookAt (2.7, -boom_length * .75, tower_height * .35);
-  } else {
-    camera.translateX (.5);
-    camera.translateY (-boom_length * 1);
-    camera.translateZ (.5);
-    camera.up.set (0, 0, 1);
-    camera.lookAt (0, 0, 0);
-  }
+  
+  adjust_camera ();
 
   scene = new THREE.Scene();
 
@@ -414,7 +436,24 @@ function animate() {
   renderer.render( scene, camera );
 }
 
+function onWindowResize () {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function do_click (ev) {
+  ev.preventDefault();
+  
+  console.log ("move camera");
+  position_idx = (position_idx + 1) % positions.length;
+  adjust_camera ();
+}
+
 $(function () {
+  window.addEventListener ('resize', onWindowResize, false);
+  $("body").click (do_click);
+
   init();
   animate();
 });
