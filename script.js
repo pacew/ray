@@ -130,16 +130,22 @@ function make_ray () {
   ray_body = new THREE.Mesh (geo, mat);
   ray.add (ray_body);
 
-  ray_wing = new THREE.Group ();
+  geo = new THREE.Geometry ();
+  geo.vertices.push (
+    new THREE.Vector3 (0, -ray_body_len/2, 0),
+    new THREE.Vector3 (0,  ray_body_len/2, 0),
+    new THREE.Vector3 (wing1_width, ray_body_len/2, 0),
+    new THREE.Vector3 (wing1_width, -ray_body_len/2, 0),
+  );
+  geo.faces.push (new THREE.Face3 (0, 1, 2));
+  geo.faces.push (new THREE.Face3 (2, 3, 0));
   
-  geo = new THREE.PlaneGeometry (wing1_width, ray_body_len);
   mat = new THREE.MeshBasicMaterial ({color: 0x00ffff});
   mat.side = THREE.DoubleSide;
 
-  let r = new THREE.Mesh (geo, mat);
-  r.rotateY (dtor (-10));
-//  r.translateX (ray_body_width / 2 + wing1_width / 2);
-  ray_wing.add (r);
+  ray_wing = new THREE.Mesh (geo, mat);
+  ray_wing.translateX (ray_body_width / 2);
+  ray_wing.rotateY (dtor (-10));
 
   ray.add (ray_wing);
   
@@ -303,6 +309,11 @@ function animate() {
     hub_angle += delta_t / hub_period * 2 * Math.PI 
     hub_angle %= 2 * Math.PI;
     hub.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), hub_angle);
+
+    ray_wing.setRotationFromAxisAngle (new THREE.Vector3 (0, 1, 0), 
+				       lscale (Math.sin (t * 2), 
+					       -1, 1, 
+					       0, dtor (-20)));
 
   }
   
