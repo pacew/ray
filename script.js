@@ -143,7 +143,7 @@ function make_ray () {
 
   segs = [];
   let seg;
-  let z = 0;
+
   let xoffset = 0;
   for (let idx = 0; idx < nsegs; idx++) {
     seg = {};
@@ -234,99 +234,6 @@ function make_ray () {
 
   scene.add (ray);
 
-}
-
-function make_ray_old () {
-  var geo, mat;
-  
-  segs = [];
-  
-  let last_seg = null;
-  
-  const nsegs = 4;
-  let segnum;
-  let seg;
-
-  let initial_wid = .25;
-  let initial_len = 2;
-
-  let wid = initial_wid;
-  let len = initial_len;
-
-  let x = 0;
-  for (segnum = 0; segnum < nsegs; segnum++) {
-    seg = {};
-    seg.wid = wid;
-    seg.len = len;
-
-    seg.left = x;
-    seg.right = seg.left + seg.wid;
-    seg.front = -seg.len/2;
-    seg.back = seg.len/2;
-
-    x += seg.wid;
-
-    wid *= .75;
-    len *= .8;
-    
-    segs.push (seg);
-  }
-
-  let max_x = x;
-
-  last_seg = null;
-  for (segnum = 0; segnum < nsegs; segnum++) {
-    seg = segs[segnum];
-
-    geo = new THREE.Geometry ();
-    geo.vertices.push (
-      new THREE.Vector3 (0,       -seg.len/2, 0),
-      new THREE.Vector3 (0,        seg.len/2, 0),
-      new THREE.Vector3 (seg.wid,  seg.len/2, 0),
-      new THREE.Vector3 (seg.wid, -seg.len/2, 0)
-    );
-    geo.faces.push (new THREE.Face3 (0, 1, 2));
-    geo.faces.push (new THREE.Face3 (2, 3, 0));
-  
-    let u0 = seg.left / max_x;
-    let u1 = seg.right / max_x;
-
-    let v0 = lscale (seg.front, 
-		     -initial_len / 2, initial_len / 2,
-		     0, 1);
-    let v1 = lscale (seg.back,
-		     -initial_len / 2, initial_len / 2,
-		     0, 1);
-
-    
-
-    let map = [];
-    map.push ([
-      new THREE.Vector2 (u0, v0),
-      new THREE.Vector2 (u0, v1),
-      new THREE.Vector2 (u1, v1)
-    ]);
-
-    map.push ([
-      new THREE.Vector2 (u1, v1),
-      new THREE.Vector2 (u1, v0),
-      new THREE.Vector2 (u0, v0)
-    ]);
-
-    geo.faceVertexUvs = [ map ];
-
-    mat = new THREE.MeshBasicMaterial ({map: body_texture});
-    mat.side = THREE.DoubleSide;
-
-    seg.mesh = new THREE.Mesh (geo, mat);
-    if (last_seg) {
-      seg.mesh.translateX (last_seg.wid);
-      last_seg.mesh.add (seg.mesh);
-    }
-    last_seg = seg;
-  }
-  
-  scene.add (segs[0].mesh);
 }
 
 function make_model () {
