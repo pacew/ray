@@ -20,9 +20,9 @@ const body_w = feet_to_meters (20);
 
 let positions = [
   { 
-    pos: [ 3, -boom_length * 1.2, 1 ],
+    pos: [ 3, -boom_length * 2, 1 ],
     up: [ 0, 0, 1],
-    look: [ 4, -boom_length * .75, tower_height * .65 ],
+    look: [ 2, -boom_length * .75, tower_height * .45 ],
     follow: 0
   },
   {
@@ -33,7 +33,7 @@ let positions = [
   },
 ];
 
-if (0) {
+if (1) {
   positions.push ({
     pos: [.5, -boom_length, .5 ],
     up: [0, 0, 1],
@@ -273,6 +273,8 @@ function make_ray () {
 function make_person (height) {
   let geo, mat;
 
+  let person_color = 0x826b36;
+
   /* http://www.nsta.org/publications/news/story.aspx?id=48921 */
   let head_factor = 1;
   let body_factor = 1 + 3/4 + 1 + 1/8;
@@ -285,18 +287,62 @@ function make_person (height) {
   let leg_height = scale * leg_factor ;
 
   let body_radius = body_height * .3
-  let leg_radius = leg_height * .15;
+  let leg_radius = leg_height * 0.06;
 
   let person = new THREE.Group ();
   let elt;
 
-  console.log (leg_radius, leg_height);
-  geo = new THREE.CylinderGeometry (leg_radius, leg_radius, leg_height);
-  mat = new THREE.MeshBasicMaterial( {color: 0xffff00} );
-  elt = new THREE.Mesh (geo, mat);
+  for (let side of [1, -1]) {
+    geo = new THREE.CylinderGeometry (leg_radius, leg_radius, leg_height);
+    mat = new THREE.MeshBasicMaterial( {color: person_color} );
+    elt = new THREE.Mesh (geo, mat)
+      .rotateX (dtor (90))
+      .translateY (leg_height/2)
+      .translateX (leg_radius * 1.5 * side);
+    person.add (elt);
+  }
+
+  geo = new THREE.CylinderGeometry (body_radius, body_radius, body_height);
+  mat = new THREE.MeshBasicMaterial( {color: person_color} );
+  elt = new THREE.Mesh (geo, mat)
+    .rotateX (dtor (90))
+    .translateY (body_height/2 + leg_height);
   person.add (elt);
+
+  geo = new THREE.SphereGeometry (head_radius, 32, 32);
+  mat = new THREE.MeshBasicMaterial( {color: person_color} );
+  elt = new THREE.Mesh (geo, mat)
+    .translateZ (leg_height + body_height + head_radius * 1.3);
+  person.add (elt);
+
+  let total = leg_height + body_height + head_radius + head_radius;
+  console.log (total);
+
   
+
   return (person);
+}
+
+let rand_next = 1;
+function rand () {
+  const limit = 0x80000000;
+  rand_next = (rand_next * 1103515245 + 12345) & (limit - 1);
+  return (rand_next / limit);
+}
+
+function make_people () {
+  for (let pnum = 0; pnum < 15; pnum++) {
+    let r = lscale (rand (), 0, 1, boom_length * .5, boom_length * 2);
+    let theta = lscale (rand (), 0, 1, 0, 2 * Math.PI);
+    let x = r * Math.cos (theta);
+    let y = r * Math.sin (theta);
+
+    let person = make_person (1.7);
+    person
+      .translateX(x)
+      .translateY(y);
+    scene.add (person);
+  }
 }
 
 function make_model () {
@@ -421,8 +467,7 @@ function init() {
   make_model ();
   make_sky ();
 
-  let person = make_person (1.7);
-  scene.add (person);
+  make_people();
 
   renderer = new THREE.WebGLRenderer( { antialias: true } );
 
