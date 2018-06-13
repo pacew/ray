@@ -4,8 +4,10 @@ var camera, scene, renderer;
 
 function dtor (x) {return (x / 360.0 * 2 * Math.PI); }
 
-const tower_height = 6; /* meters */
-const boom_length = 4; /* meters */
+function feet_to_meters (x) { return (x * 0.3048); }
+
+const tower_height = feet_to_meters (20);
+const boom_length = feet_to_meters (20 + 2);
 const boom_diam = .2; /* meters */
 
 var hub_angle = 0; /* radians */
@@ -13,8 +15,35 @@ const hub_period = 15; /* seconds */
 
 const sky_radius = 30; /* meters */
 
-const body_l = 2;
-const body_w = 1;
+const body_l = feet_to_meters (18);
+const body_w = feet_to_meters (20);
+
+let positions = [
+  { 
+    pos: [ 3, -boom_length * 1.2, 1 ],
+    up: [ 0, 0, 1],
+    look: [ 4, -boom_length * .75, tower_height * .65 ],
+    follow: 0
+  },
+  {
+    pos: [3, -boom_length * 1.5, 1 ],
+    up: [0, 0, 1],
+    look: [ 0, 0, tower_height * .7 ],
+    follow: 1
+  },
+];
+
+if (0) {
+  positions.push ({
+    pos: [.5, -boom_length, .5 ],
+    up: [0, 0, 1],
+    look: [0, 0, 0],
+    follow: 0
+  });
+}
+
+
+
 
 function axes () {
   const axis_len = tower_height;
@@ -121,8 +150,7 @@ function make_ray () {
   ray = new THREE.Group ();
 
   const nsegs = 12;
-  const total_length = 2;
-  const body_width = .3;
+  const total_length = body_l;
 
   const length_reduction = .7;
   const width_reduction = .9;
@@ -130,7 +158,7 @@ function make_ray () {
   let lengths = [];
   let widths = [];
   let len = total_length;
-  let wid = body_width / 2;
+  let wid = 1;
   let total_width = 0;
   for (let idx = 0; idx < nsegs / 2; idx++) {
     lengths[idx] = len;
@@ -142,6 +170,13 @@ function make_ray () {
     wid *= width_reduction;
   }
   total_width *= 2;
+
+  let width_scale = body_w / total_width;
+
+  for (let idx = 0; idx < nsegs / 2; idx++) {
+    widths[idx] *= width_scale;
+  }
+
 
   segs = [];
   let seg;
@@ -235,6 +270,35 @@ function make_ray () {
   }
 }
 
+function make_person (height) {
+  let geo, mat;
+
+  /* http://www.nsta.org/publications/news/story.aspx?id=48921 */
+  let head_factor = 1;
+  let body_factor = 1 + 3/4 + 1 + 1/8;
+  let leg_factor = 1 + 7/8 + 1 + 5/8 + 3/8;
+
+  let scale = height / (head_factor + body_factor + leg_factor);
+
+  let head_radius = scale * head_factor / 2;
+  let body_height = scale * body_factor;
+  let leg_height = scale * leg_factor ;
+
+  let body_radius = body_height * .3
+  let leg_radius = leg_height * .15;
+
+  let person = new THREE.Group ();
+  let elt;
+
+  console.log (leg_radius, leg_height);
+  geo = new THREE.CylinderGeometry (leg_radius, leg_radius, leg_height);
+  mat = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+  elt = new THREE.Mesh (geo, mat);
+  person.add (elt);
+  
+  return (person);
+}
+
 function make_model () {
   let geo, mat;
   
@@ -256,16 +320,10 @@ function make_model () {
   /* body */
   body_texture = new THREE.Texture (canvas);
 
-  geo = new THREE.BoxGeometry( body_l, body_w, .05 );
-  mat = new THREE.MeshBasicMaterial ( { map: body_texture } );
-  body = new THREE.Mesh( geo, mat )
-    .translateY (boom_length / 2 + body_w / 2);
-//  boom.add( body );
-
   make_ray ();
 
   ray.translateY (boom_length / 2);
-  ray.translateZ (-.5);
+  ray.translateZ (.5);
   ray.rotateZ (dtor (90));
   boom.add (ray);
 
@@ -322,27 +380,6 @@ function make_sky () {
 
 }
 
-const positions = [
-  { 
-    pos: [ 3, -boom_length * .9, 1 ],
-    up: [ 0, 0, 1],
-    look: [ 2.7, -boom_length * .75, tower_height * .35 ]
-  },
-  {
-    pos: [3, -boom_length * 2, 1 ],
-    up: [0, 0, 1],
-    look: [ 0, 0, tower_height * .7 ]
-  },
-];
-
-if (0) {
-  positions.push ({
-    pos: [.5, -boom_length, .5 ],
-    up: [0, 0, 1],
-    look: [0, 0, 0]
-  });
-}
-
 let position_idx = 0;
 
 
@@ -366,7 +403,7 @@ function init() {
     h = w;
   }
 
-  camera = new THREE.PerspectiveCamera( 70, /* degrees */
+  camera = new THREE.PerspectiveCamera( 50, /* degrees */
 					w / h,
 					0.01, 
 					sky_radius * 2)
@@ -383,6 +420,9 @@ function init() {
 
   make_model ();
   make_sky ();
+
+  let person = make_person (1.7);
+  scene.add (person);
 
   renderer = new THREE.WebGLRenderer( { antialias: true } );
 
@@ -418,17 +458,24 @@ function animate() {
     hub_angle %= 2 * Math.PI;
     hub.setRotationFromAxisAngle (new THREE.Vector3 (0, 0, 1), hub_angle);
 
-    if (true) {
-      for (let idx = 0; idx < segs.length; idx++) {
-	let seg = segs[idx];
-	if (seg.prev) {
-	  seg.mesh.setRotationFromAxisAngle (
-	    new THREE.Vector3 (0, 1, 0), 
-	    lscale (Math.sin (t * 1), 
-		    -1, 1, 
-		    0, seg.dir * dtor (-6 * seg.size_idx)));
-	}
+    for (let idx = 0; idx < segs.length; idx++) {
+      let seg = segs[idx];
+      if (seg.prev) {
+	seg.mesh.setRotationFromAxisAngle (
+	  new THREE.Vector3 (0, 1, 0), 
+	  lscale (Math.sin (t * 1), 
+		  -1, 1, 
+		  0, seg.dir * dtor (-4 * seg.size_idx)));
       }
+
+      if (positions[position_idx].follow) {
+	let x = boom_length * Math.cos (hub_angle + dtor (90));
+	let y = boom_length * Math.sin (hub_angle + dtor (90));
+	camera.lookAt (x, y, tower_height);
+	
+      }
+
+
     }
   }
   
@@ -442,12 +489,16 @@ function onWindowResize () {
   renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
+function next_view () {
+  position_idx = (position_idx + 1) % positions.length;
+  adjust_camera ();
+}
+
 function do_click (ev) {
   ev.preventDefault();
   
   console.log ("move camera");
-  position_idx = (position_idx + 1) % positions.length;
-  adjust_camera ();
+  next_view ();
 }
 
 $(function () {
@@ -456,5 +507,8 @@ $(function () {
 
   init();
   animate();
+
+  next_view ();
+
 });
 
